@@ -1,12 +1,27 @@
+import flask
 import psycopg2
+import simplejson
 
-connection = psycopg2.connect(dbname="restaurant", user="postgres", password="postgres")
-cursor = connection.cursor()
 
-cursor.execute("""SELECT * FROM restaurant_schema.employees""")
-xd = cursor.fetchall()
-print(xd)
+def main():
+    app = flask.Flask("")
 
-connection.commit()
-cursor.close()
-connection.close()
+    @app.route('/menu')
+    def select():
+        connection = psycopg2.connect(dbname="restaurant", user="postgres", password="postgres")
+        cursor = connection.cursor()
+
+        cursor.execute("""SELECT * FROM restaurant_schema.products""")
+        products = cursor.fetchall()
+        json_products = simplejson.dumps(products)
+
+        connection.commit()
+        cursor.close()
+        connection.close()
+        return json_products
+
+    app.run()
+
+
+if __name__ == '__main__':
+    main()
