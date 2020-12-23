@@ -1,11 +1,10 @@
-import requests
 import flask
 import psycopg2
 import simplejson
 
 
 def connection_start():
-    connection = psycopg2.connect(dbname="restaurant", user="postgres", password="postgres")
+    connection = psycopg2.connect(dbname="postgres", user="postgres", password="postgres")
     cursor = connection.cursor()
     return connection, cursor
 
@@ -37,10 +36,12 @@ def main():
         return json_products
 
     # todo
-    @app.route('/addorder', methods=['POST'])
+    @app.route('/addorder', methods=['GET', 'POST'])
     def add_order():
         content = flask.request.json
         print(content)
+        print("dupa")
+        return flask.jsonify(content)
 
     app.run()
 
