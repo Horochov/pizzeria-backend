@@ -37,11 +37,10 @@ def main():
         return json_products
 
     # todo
-    @app.route('/addorder', methods=['GET', 'POST'])
+    @app.route('/addorder', methods=['POST'])
     def add_order():
         content = flask.request.json
         print(content)
-        return content
 
     app.run()
 
