@@ -1,50 +1,43 @@
-import flask
 import psycopg2
-import simplejson
+from abc import ABC, abstractmethod
 
 
-def connection_start():
-    connection = psycopg2.connect(dbname="postgres", user="postgres", password="postgres")
-    cursor = connection.cursor()
-    return connection, cursor
+class AbstractPizzeriaRepository(ABC):
+    @abstractmethod
+    def get_products(self):
+        pass
 
 
-def connection_end(connection, cursor):
-    connection.commit()
-    cursor.close()
-    connection.close()
+class PizzeriaRepository(AbstractPizzeriaRepository):
+    def __init__(self, user, password):
+        self.user = user
+        self.password = password
+        self.connection = None
+        self.cursor = None
 
+    def connection_start(self):
+        self.connection = psycopg2.connect(dbname="restaurant", user=f"{self.user}",
+                                           password=f"{self.password}")  # todo dbname=postgres u Radka
+        self.cursor = self.connection.cursor()
 
-def database_get_products():
-    connection, cursor = connection_start()
+    def connection_end(self):
+        if self.connection is not None:
+            self.connection.commit()
+        else:
+            return
 
-    cursor.execute("""SELECT * FROM restaurant_schema.products""")
-    products = cursor.fetchall()
+        if self.cursor is not None:
+            self.cursor.close()
+        else:
+            return
 
-    connection_end(connection, cursor)
+        self.connection.close()
+        self.connection = None
+        self.cursor = None
 
-    return products
-
-
-def main():
-    app = flask.Flask("")
-
-    @app.route('/menu')
-    def select_menu():
-        products = database_get_products()
-        json_products = simplejson.dumps(products)
-        return json_products
-
-    # todo
-    @app.route('/addorder', methods=['GET', 'POST'])
-    def add_order():
-        content = flask.request.json
-        print(content)
-        print("dupa")
-        return flask.jsonify(content)
-
-    app.run()
-
-
-if __name__ == '__main__':
-    main()
+    def get_products(self):
+        self.connection_start()
+        self.cursor.execute("""SELECT * FROM restaurant_schema.products""")
+        products = self.cursor.fetchall()
+        self.connection_end()
+        return products
