@@ -7,6 +7,14 @@ class AbstractPizzeriaRepository(ABC):
     def get_products(self):
         pass
 
+    @abstractmethod
+    def add_order(self, order):
+        pass
+
+    @abstractmethod
+    def login(self, user, password):
+        pass
+
 
 class PizzeriaRepository(AbstractPizzeriaRepository):
     def __init__(self, user, password):
@@ -16,7 +24,8 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
         self.cursor = None
 
     def connection_start(self):
-        self.connection = psycopg2.connect(dbname="restaurant", user=f"{self.user}",
+        self.connection = psycopg2.connect(dbname="restaurant",
+                                           user=f"{self.user}",
                                            password=f"{self.password}")  # todo dbname=postgres u Radka
         self.cursor = self.connection.cursor()
 
@@ -41,3 +50,17 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
         products = self.cursor.fetchall()
         self.connection_end()
         return products
+
+    def add_order(self, order):
+        pass
+
+    def login(self, user, password):
+        self.connection_start()
+        self.cursor.execute(f"""SELECT * FROM restaurant_schema.employees
+        WHERE nickname='{user}' AND employee_password='{password}'""")
+        user = self.cursor.fetchall()
+        self.connection_end()
+        if user:
+            return True
+        else:
+            return False
