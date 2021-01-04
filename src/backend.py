@@ -21,16 +21,15 @@ def main():
     # todo https://blog.miguelgrinberg.com/post/restful-authentication-with-flask
     @app.route('/addorder', methods=['POST'])
     def add_order():
-        order = request.json
-        print(order)
-        print("powiedzmy że dodano")
+        orders = request.json
+        repo.add_orders(orders)
         return jsonify(True)
 
     @app.route('/user', methods=['POST'])
     def login():
         user = request.json
-        nickname = user['typedNickname']
-        password = hashlib.sha256(user["typedPassword"].encode('utf-8')).hexdigest()
+        nickname = user['nickname']
+        password = hashlib.sha256(user["password"].encode('utf-8')).hexdigest()
         logged_in = repo.login(nickname, password)
         return jsonify(logged_in)
 
