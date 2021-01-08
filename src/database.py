@@ -22,35 +22,32 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
     def __init__(self, user, password):
         self.user = user
         self.password = password
-        self.connection = None
-        self.cursor = None
 
     def connection_start(self):
-        self.connection = psycopg2.connect(dbname="restaurant",
-                                           user=f"{self.user}",
-                                           password=f"{self.password}")  # todo dbname=postgres u Radka
-        self.cursor = self.connection.cursor()
+        connection = psycopg2.connect(dbname="restaurant",
+                                      user=f"{self.user}",
+                                      password=f"{self.password}")
+        cursor = connection.cursor()
+        return connection, cursor
 
-    def connection_end(self):
-        if self.connection is not None:
-            self.connection.commit()
+    def connection_end(self, connection, cursor):
+        if connection is not None:
+            connection.commit()
         else:
             return
 
-        if self.cursor is not None:
-            self.cursor.close()
+        if cursor is not None:
+            cursor.close()
         else:
             return
 
-        self.connection.close()
-        self.connection = None
-        self.cursor = None
+        connection.close()
 
     def get_products(self):
-        self.connection_start()
-        self.cursor.execute("""SELECT * FROM restaurant_schema.products;""")
-        products = self.cursor.fetchall()
-        self.connection_end()
+        connection, cursor = self.connection_start()
+        cursor.execute("""SELECT * FROM restaurant_schema.products;""")
+        products = cursor.fetchall()
+        self.connection_end(connection, cursor)
         return products
 
     def add_orders(self, orders):
@@ -59,29 +56,31 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
         table_number = int(orders['table'])
         ordered_products = orders['order']
 
-        self.connection_start()
+        connection, cursor = self.connection_start()
 
         # znalezienie id kelnera
-        self.cursor.execute(f"""SELECT id FROM restaurant_schema.employees
+        cursor.execute(f"""SELECT id FROM restaurant_schema.employees
         WHERE nickname='{waiter_nickname}';""")
-        waiter_id = self.cursor.fetchone()[0]
+        waiter_id = cursor.fetchone()[0]
+        print(waiter_id)
 
         # obecna data i godzina
-        self.cursor.execute("SELECT CURRENT_TIMESTAMP;")
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        print(timestamp)
 
         # wstawienie nowego rachunku i otrzymanie jego id
-        self.cursor.execute(f"""INSERT INTO restaurant_schema.bills
-        (client_name, table_number, bill_date, waiter_id)
+        cursor.execute(f"""INSERT INTO restaurant_schema.bills
+        (client_name, table_number, bill_date, bill_status, waiter_id)
         VALUES
-        ('{client_name}', {table_number}, '{timestamp}', {waiter_id}) 
+        ('{client_name}', {table_number}, '{timestamp}', 'Open', {waiter_id}) 
         RETURNING id;""")
-        bill_id = self.cursor.fetchone()[0]
+        bill_id = cursor.fetchone()[0]
+        print(bill_id)
 
         # wydobycie z bazy id wszystkich kucharzy
-        self.cursor.execute("SELECT id FROM restaurant_schema.employees WHERE job='Cook'")
+        cursor.execute("SELECT id FROM restaurant_schema.employees WHERE job='Cook'")
         cooks_id = []
-        for tuplee in self.cursor.fetchall():
+        for tuplee in cursor.fetchall():
             cooks_id.append(tuplee[0])
 
         # dodanie zamówionych produktów do zamówień, i przypisanie losowego kucharza
@@ -90,23 +89,22 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
                 comment = product['comment']
             else:
                 comment = ""
-            self.cursor.execute(f"""INSERT INTO restaurant_schema.orders
-            (order_comment, order_date, bill_id, product_id, cook_id)
+            print(f"{product}: {comment}")
+            cursor.execute(f"""INSERT INTO restaurant_schema.orders
+            (order_status, order_comment, order_date, bill_id, product_id, cook_id)
             VALUES
-            ('{comment}', '{timestamp}', {bill_id}, {product['productId']}, {random.choice(cooks_id)})""")
+            ('Ordered', '{comment}', '{timestamp}', {bill_id}, {product['productId']}, {random.choice(cooks_id)})""")
 
         # obliczenie ceny zamówienia i wpisanie jej do bazy
-        self.cursor.execute(f"CALL restaurant_schema.calculate_bill_value({bill_id});")
-
-        self.connection.commit()
-        self.connection_end()
+        # cursor.execute(f"CALL restaurant_schema.calculate_bill_value({bill_id});") # todo
+        self.connection_end(connection, cursor)
 
     def login(self, user, password):
-        self.connection_start()
-        self.cursor.execute(f"""SELECT * FROM restaurant_schema.employees
+        connection, cursor = self.connection_start()
+        cursor.execute(f"""SELECT * FROM restaurant_schema.employees
         WHERE nickname='{user}' AND employee_password='{password}';""")
-        user_got = self.cursor.fetchall()
-        self.connection_end()
+        user_got = cursor.fetchall()
+        self.connection_end(connection, cursor)
         if user_got:
             return True
         else:
