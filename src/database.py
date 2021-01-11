@@ -96,7 +96,7 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
             ('Ordered', '{comment}', '{timestamp}', {bill_id}, {product['productId']}, {random.choice(cooks_id)})""")
 
         # obliczenie ceny zamówienia i wpisanie jej do bazy
-        # cursor.execute(f"CALL restaurant_schema.calculate_bill_value({bill_id});") # todo
+        cursor.execute(f"CALL restaurant_schema.calculate_bill_value({bill_id});")
         self.connection_end(connection, cursor)
 
     def login(self, user, password):
