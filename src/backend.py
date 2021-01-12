@@ -1,20 +1,19 @@
 from flask import Flask, request, jsonify
 import simplejson
 import hashlib
-from src.database import PizzeriaRepository
+from database import PizzeriaRepository
 
 
 def main():
 
     app = Flask(__name__)
 
-    repo = PizzeriaRepository("postgres", "postgres")
+    repo = PizzeriaRepository("restaurant", "123456")
 
     @app.route('/menu', methods=['GET'])
     def select_menu():
         products = repo.get_products()
         json_products = simplejson.dumps(products)
-        print(json_products)
         return json_products
 
     @app.route('/addorder', methods=['POST'])
@@ -27,7 +26,7 @@ def main():
     def login():
         user = request.json
         nickname = user['nickname']
-        password = hashlib.sha256(user["password"].encode('utf-8')).hexdigest()
+        password = user["password"]
         logged_in = repo.login(nickname, password)
         return jsonify(logged_in)
 

@@ -24,7 +24,7 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
         self.password = password
 
     def connection_start(self):
-        connection = psycopg2.connect(dbname="restaurant",
+        connection = psycopg2.connect(dbname="postgres",
                                       user=f"{self.user}",
                                       password=f"{self.password}")
         cursor = connection.cursor()
@@ -45,13 +45,13 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
 
     def get_products(self):
         connection, cursor = self.connection_start()
-        cursor.execute("""SELECT * FROM restaurant_schema.products;""")
+        cursor.execute("""SELECT * FROM public.menu;""")
         products = cursor.fetchall()
         self.connection_end(connection, cursor)
         return products
 
     def add_orders(self, orders):
-        waiter_nickname = orders['waiter']
+        [firstname, lastname] = orders['waiter'].split()
         client_name = orders['clientName']
         table_number = int(orders['table'])
         ordered_products = orders['order']
@@ -59,8 +59,8 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
         connection, cursor = self.connection_start()
 
         # znalezienie id kelnera
-        cursor.execute(f"""SELECT id FROM restaurant_schema.employees
-        WHERE nickname='{waiter_nickname}';""")
+        cursor.execute(f"""SELECT id FROM public.employees
+        WHERE firstname='{firstname}' AND lastname='{lastname}';""")
         waiter_id = cursor.fetchone()[0]
         print(waiter_id)
 
@@ -69,19 +69,19 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
         print(timestamp)
 
         # wstawienie nowego rachunku i otrzymanie jego id
-        cursor.execute(f"""INSERT INTO restaurant_schema.bills
-        (client_name, table_number, bill_date, bill_status, waiter_id)
+        cursor.execute(f"""INSERT INTO public.bills
+        (clientname, tablenr, waiterid)
         VALUES
-        ('{client_name}', {table_number}, '{timestamp}', 'Open', {waiter_id}) 
+        ('{client_name}', {table_number}, {waiter_id}) 
         RETURNING id;""")
         bill_id = cursor.fetchone()[0]
         print(bill_id)
 
         # wydobycie z bazy id wszystkich kucharzy
-        cursor.execute("SELECT id FROM restaurant_schema.employees WHERE job='Cook'")
-        cooks_id = []
-        for tuplee in cursor.fetchall():
-            cooks_id.append(tuplee[0])
+        #cursor.execute("SELECT id FROM public.employees WHERE jobtitle='Cook'")
+        #cooks_id = []
+        #for tuplee in cursor.fetchall():
+            #cooks_id.append(tuplee[0])
 
         # dodanie zamówionych produktów do zamówień, i przypisanie losowego kucharza
         for product in ordered_products:
@@ -90,19 +90,21 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
             else:
                 comment = ""
             print(f"{product}: {comment}")
-            cursor.execute(f"""INSERT INTO restaurant_schema.orders
-            (order_status, order_comment, order_date, bill_id, product_id, cook_id)
+            cursor.execute(f"""INSERT INTO public.orders
+            (status, comments, orderdate, billid, productid, cookid)
             VALUES
-            ('Ordered', '{comment}', '{timestamp}', {bill_id}, {product['productId']}, {random.choice(cooks_id)})""")
+            (1, '{comment}', '{timestamp}', {bill_id}, {product['productId']}, null)""")
 
         # obliczenie ceny zamówienia i wpisanie jej do bazy
-        cursor.execute(f"CALL restaurant_schema.calculate_bill_value({bill_id});")
+        #cursor.execute(f"CALL restaurant_schema.calculate_bill_value({bill_id});")
         self.connection_end(connection, cursor)
 
     def login(self, user, password):
+        [firstname, lastname] = user.split()
         connection, cursor = self.connection_start()
-        cursor.execute(f"""SELECT * FROM restaurant_schema.employees
-        WHERE nickname='{user}' AND employee_password='{password}';""")
+        cursor.execute(f"""SELECT id FROM public.employees
+        WHERE firstname='{firstname}' AND lastname='{lastname}' 
+            AND password='{password}';""")
         user_got = cursor.fetchall()
         self.connection_end(connection, cursor)
         if user_got:
