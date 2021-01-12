@@ -51,18 +51,19 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
         return products
 
     def add_orders(self, orders):
-        [firstname, lastname] = orders['waiter'].split()
+        user = orders['waiter']
+        password = orders['waiterPassword']
         client_name = orders['clientName']
         table_number = int(orders['table'])
         ordered_products = orders['order']
-
+        
+        #pobierz ID kelnera (i sprawdź uprawnienia)
+        waiter_id = self.login(user, password)
+        if not waiter_id:
+            print(f"Failed to autenthificate {user}!")
+            return False
+        
         connection, cursor = self.connection_start()
-
-        # znalezienie id kelnera
-        cursor.execute(f"""SELECT id FROM public.employees
-        WHERE firstname='{firstname}' AND lastname='{lastname}';""")
-        waiter_id = cursor.fetchone()[0]
-        print(waiter_id)
 
         # obecna data i godzina
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -96,7 +97,10 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
             (1, '{comment}', '{timestamp}', {bill_id}, {product['productId']}, null)""")
 
         self.connection_end(connection, cursor)
+        return True
 
+    #jeżeli podano prawidłowe dane zwraca ID pracownika
+    #w przeciwnym razie zwraca None
     def login(self, user, password):
         [firstname, lastname] = user.split()
         connection, cursor = self.connection_start()
@@ -106,6 +110,6 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
         user_got = cursor.fetchall()
         self.connection_end(connection, cursor)
         if user_got:
-            return True
+            return user_got[0]
         else:
-            return False
+            return None
