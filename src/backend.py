@@ -8,7 +8,10 @@ def main():
 
     app = Flask(__name__)
 
-    repo = PizzeriaRepository("restaurant", "123456")
+    repo = PizzeriaRepository(user = "restaurant",
+                              password = "123456",
+                              dbname = "postgres", 
+                              schema_name = "public")
 
     @app.route('/menu', methods=['GET'])
     def select_menu():

@@ -19,12 +19,14 @@ class AbstractPizzeriaRepository(ABC):
 
 
 class PizzeriaRepository(AbstractPizzeriaRepository):
-    def __init__(self, user, password):
+    def __init__(self, user, password, dbname = "postgres", schema_name = "public"):
         self.user = user
         self.password = password
+        self.dbname = dbname
+        self.schema_name = schema_name
 
     def connection_start(self):
-        connection = psycopg2.connect(dbname="postgres",
+        connection = psycopg2.connect(dbname=f"{self.dbname}",
                                       user=f"{self.user}",
                                       password=f"{self.password}")
         cursor = connection.cursor()
@@ -45,7 +47,7 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
 
     def get_products(self):
         connection, cursor = self.connection_start()
-        cursor.execute("""SELECT * FROM public.menu;""")
+        cursor.execute(f"""SELECT * FROM {self.schema_name}.menu;""")
         products = cursor.fetchall()
         self.connection_end(connection, cursor)
         return products
@@ -69,14 +71,15 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         print(timestamp)
 
-        cursor.execute(f"""SELECT id FROM public.bills
+        #sprawdź czy rachunek dla stolika i imienia jest otwarty
+        cursor.execute(f"""SELECT id FROM {self.schema_name}.bills
         WHERE clientname='{client_name}' AND tablenr={table_number} AND billvalue>0""")
         bill_id = cursor.fetchone()
         if(bill_id != None):
             bill_id=bill_id[0]
         else:
             # wstawienie nowego rachunku i otrzymanie jego id
-            cursor.execute(f"""INSERT INTO public.bills
+            cursor.execute(f"""INSERT INTO {self.schema_name}.bills
             (clientname, tablenr, waiterid)
             VALUES
             ('{client_name}', {table_number}, {waiter_id}) 
@@ -91,7 +94,7 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
             else:
                 comment = ""
             print(f"{product}: {comment}")
-            cursor.execute(f"""INSERT INTO public.orders
+            cursor.execute(f"""INSERT INTO {self.schema_name}.orders
             (status, comments, orderdate, billid, productid, cookid)
             VALUES
             (1, '{comment}', '{timestamp}', {bill_id}, {product['productId']}, null)""")
@@ -104,7 +107,7 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
     def login(self, user, password):
         [firstname, lastname] = user.split()
         connection, cursor = self.connection_start()
-        cursor.execute(f"""SELECT id FROM public.employees
+        cursor.execute(f"""SELECT id FROM {self.schema_name}.employees
         WHERE firstname='{firstname}' AND lastname='{lastname}' 
             AND password='{password}';""")
         user_got = cursor.fetchone()
