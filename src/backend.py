@@ -32,10 +32,5 @@ def main():
 
     app.run()
 
-    # https://stackoverflow.com/questions/22947905/flask-example-with-post
-    # https://flask-sqlalchemy.palletsprojects.com/en/2.x/quickstart/#a-minimal-application
-    # https://blog.miguelgrinberg.com/post/restful-authentication-with-flask
-
-
 if __name__ == '__main__':
     main()
