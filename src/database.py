@@ -60,7 +60,7 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
         #pobierz ID kelnera (i sprawdź uprawnienia)
         waiter_id = self.login(user, password)
         if not waiter_id:
-            print(f"Failed to autenthificate {user}!")
+            print(f"Failed to authenticate {user}!")
             return False
         
         connection, cursor = self.connection_start()
@@ -107,7 +107,7 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
         cursor.execute(f"""SELECT id FROM public.employees
         WHERE firstname='{firstname}' AND lastname='{lastname}' 
             AND password='{password}';""")
-        user_got = cursor.fetchall()
+        user_got = cursor.fetchone()
         self.connection_end(connection, cursor)
         if user_got:
             return user_got[0]
