@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 import simplejson
 import hashlib
-from src.database import PizzeriaRepository
+from database import PizzeriaRepository
 
 
 def main():

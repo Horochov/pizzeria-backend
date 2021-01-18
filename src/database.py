@@ -24,7 +24,7 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
         self.password = password
 
     def connection_start(self):
-        connection = psycopg2.connect(dbname="restaurant",
+        connection = psycopg2.connect(dbname="mock",
                                       user=f"{self.user}",
                                       password=f"{self.password}")
         cursor = connection.cursor()
@@ -45,7 +45,7 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
 
     def get_products(self):
         connection, cursor = self.connection_start()
-        cursor.execute("""SELECT * FROM restaurant_schema.products;""")
+        cursor.execute("""SELECT * FROM mock_schema.products;""")
         products = cursor.fetchall()
         self.connection_end(connection, cursor)
         return products
@@ -59,7 +59,7 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
         connection, cursor = self.connection_start()
 
         # znalezienie id kelnera
-        cursor.execute(f"""SELECT id FROM restaurant_schema.employees
+        cursor.execute(f"""SELECT id FROM mock_schema.employees
         WHERE nickname='{waiter_nickname}';""")
         waiter_id = cursor.fetchone()[0]
         print(waiter_id)
@@ -69,7 +69,7 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
         print(timestamp)
 
         # wstawienie nowego rachunku i otrzymanie jego id
-        cursor.execute(f"""INSERT INTO restaurant_schema.bills
+        cursor.execute(f"""INSERT INTO mock_schema.bills
         (client_name, table_number, bill_date, bill_status, waiter_id)
         VALUES
         ('{client_name}', {table_number}, '{timestamp}', 'Open', {waiter_id}) 
@@ -78,7 +78,7 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
         print(bill_id)
 
         # wydobycie z bazy id wszystkich kucharzy
-        cursor.execute("SELECT id FROM restaurant_schema.employees WHERE job='Cook'")
+        cursor.execute("SELECT id FROM mock_schema.employees WHERE job='Cook'")
         cooks_id = []
         for tuplee in cursor.fetchall():
             cooks_id.append(tuplee[0])
@@ -90,18 +90,18 @@ class PizzeriaRepository(AbstractPizzeriaRepository):
             else:
                 comment = ""
             print(f"{product}: {comment}")
-            cursor.execute(f"""INSERT INTO restaurant_schema.orders
+            cursor.execute(f"""INSERT INTO mock_schema.orders
             (order_status, order_comment, order_date, bill_id, product_id, cook_id)
             VALUES
             ('Ordered', '{comment}', '{timestamp}', {bill_id}, {product['productId']}, {random.choice(cooks_id)})""")
 
         # obliczenie ceny zamówienia i wpisanie jej do bazy
-        cursor.execute(f"CALL restaurant_schema.calculate_bill_value({bill_id});")
+        cursor.execute(f"CALL mock_schema.calculate_bill_value({bill_id});")
         self.connection_end(connection, cursor)
 
     def login(self, user, password):
         connection, cursor = self.connection_start()
-        cursor.execute(f"""SELECT * FROM restaurant_schema.employees
+        cursor.execute(f"""SELECT * FROM mock_schema.employees
         WHERE nickname='{user}' AND employee_password='{password}';""")
         user_got = cursor.fetchall()
         self.connection_end(connection, cursor)
