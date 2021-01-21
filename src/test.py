@@ -9,9 +9,9 @@ import database
 repo = PizzeriaRepository("postgres", "postgres")
 
 # check login method from PizzeriaRepository
-def testLogin(user, password):
+def testLogin(user, password, rep = repo):
     password = hashlib.sha256(password.encode('utf-8')).hexdigest()
-    return repo.login(user,password)
+    return rep.login(user,password)
 
 # check backend server login handling
 # send and expect JSON data like frontend would
@@ -45,6 +45,11 @@ class TestStringMethods(unittest.TestCase):
     def test_login_real_user_wrong_password(self):
         self.assertEqual(testLogin("JS","admin123456"), False)
         
+    def test_login_mocked(self):
+        repo2 = PizzeriaRepository("postgres", "postgres")
+        repo2.login = MagicMock(return_value=True)
+        self.assertEqual(testLogin("A","B", rep = repo2), True)
+
     ##
     ## ACCEPTANCE TESTS
     ##
