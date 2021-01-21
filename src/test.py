@@ -5,9 +5,17 @@ import unittest
 import hashlib
 import database
 
+# used in unit tests
 repo = PizzeriaRepository("postgres", "postgres")
 
+# check login method from PizzeriaRepository
 def testLogin(user, password):
+    password = hashlib.sha256(password.encode('utf-8')).hexdigest()
+    return repo.login(user,password)
+
+# check backend server login handling
+# send and expect JSON data like frontend would
+def testServerLogin(user, password):
     headers = {"Accept": "application/json",
               "Content-Type": "application/json"
               }
@@ -23,35 +31,31 @@ def testLogin(user, password):
     return r.json() == True
 
 class TestStringMethods(unittest.TestCase):
-
+    
+    ##
+    ## UNIT TESTS
+    ##
     def test_login_real_user(self):
-        user = "JS"
-        password = "admin12345"
-        password = hashlib.sha256(password.encode('utf-8')).hexdigest()
-        self.assertEqual(repo.login(user,password), True)
+        self.assertEqual(testLogin("JS","admin12345"), True)
         
     def test_login_fake_user(self):
-        user = "AB"
-        password = "admin12345"
-        password = hashlib.sha256(password.encode('utf-8')).hexdigest()
-        self.assertEqual(repo.login(user,password), False)
+        self.assertEqual(testLogin("AB","admin12345"), False)
         
         
     def test_login_real_user_wrong_password(self):
-        user = "AB"
-        password = "admin123456"
-        password = hashlib.sha256(password.encode('utf-8')).hexdigest()
-        self.assertEqual(repo.login(user,password), False)
+        self.assertEqual(testLogin("JS","admin123456"), False)
         
-    
+    ##
+    ## ACCEPTANCE TESTS
+    ##
     def test_login_server_real_user(self):
-        self.assertEqual(testLogin("JS","admin12345"), True)
+        self.assertEqual(testServerLogin("JS","admin12345"), True)
 
     def test_login_server_fake_user(self):
-        self.assertEqual(testLogin("AB","admin12345"), False)
+        self.assertEqual(testServerLogin("AB","admin12345"), False)
         
     def test_login_server_real_user_wrong_password(self):
-        self.assertEqual(testLogin("JS","admin123456"), False)
+        self.assertEqual(testServerLogin("JS","admin123456"), False)
 
 
 if __name__ == '__main__':
