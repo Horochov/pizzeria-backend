@@ -5,6 +5,14 @@ import unittest
 import hashlib
 import database
 
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time
+
+
 # used in unit tests
 repo = PizzeriaRepository("postgres", "postgres")
 
@@ -31,6 +39,7 @@ def testServerLogin(user, password):
     return r.json() == True
 
 class TestStringMethods(unittest.TestCase):
+   
     
     ##
     ## UNIT TESTS
@@ -62,6 +71,46 @@ class TestStringMethods(unittest.TestCase):
     def test_login_server_real_user_wrong_password(self):
         self.assertEqual(testServerLogin("JS","admin123456"), False)
 
+    ##
+    ## SELENIUM TESTS
+    ##
+    def test_login_failed_selenium(self):
+        driver = webdriver.Firefox()
+        driver.get("localhost:3000/home")
+        
+        # true if "failed to log in message" was displayed
+        message_displayed = False
+        
+        try:
+            element = WebDriverWait(driver, 2).until(
+                EC.presence_of_element_located((By.LINK_TEXT, "Zaloguj się"))
+            )
+            element.click()
+
+            element = WebDriverWait(driver, 2).until(
+                EC.presence_of_element_located((By.ID, "formBasicEmail"))
+            )
+            element.send_keys('JS')
+
+            element = WebDriverWait(driver, 2).until(
+                EC.presence_of_element_located((By.ID, "formBasicPassword"))
+            )
+            element.send_keys('admin123456')
+
+            element.send_keys(Keys.ENTER)
+
+            WebDriverWait(driver, 2).until(
+                EC.presence_of_element_located((By.CLASS_NAME, "divFailedLogin"))
+                # EC.presence_of_element_located((By.LINK_TEXT, "Nie udało się zalogować. Spróbuj ponownie!"))
+            )
+            message_displayed = True
+            
+        except:
+            message_displayed = False
+            driver.quit()
+        
+        driver.close()
+        self.assertTrue(message_displayed)
 
 if __name__ == '__main__':
     unittest.main()
